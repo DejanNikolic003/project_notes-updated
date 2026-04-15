@@ -9,17 +9,20 @@ import {
 } from "react-native";
 
 import { COLORS, REMIND_PRESETS } from "../../constants/constants";
+import { useLanguage } from "../../hooks/useLanguage";
+import { useTheme } from "../../hooks/useTheme";
 import { styles } from "../../styles/NoteForm";
 import { computeReminderDate } from "../../utils/utils";
 
 export default function NoteForm({
-  theme,
   isEditing,
 
   title,
   setTitle,
   content,
   setContent,
+  tags,
+  setTags,
 
   color,
   setColor,
@@ -35,6 +38,9 @@ export default function NoteForm({
   saving,
   onSubmit,
 }) {
+  const { theme } = useTheme();
+  const lan = useLanguage();
+
   return (
     <ScrollView
       contentContainerStyle={[
@@ -43,10 +49,10 @@ export default function NoteForm({
       ]}
     >
       <Text style={[styles.header, { color: theme.text }]}>
-        {isEditing ? "Edit note" : "Create note"}
+        {isEditing ? lan.NOTE_EDIT_TITLE : lan.NOTE_CREATE_TITLE}
       </Text>
 
-      <Text style={[styles.label, { color: theme.subtext }]}>Title</Text>
+      <Text style={[styles.label, { color: theme.subtext }]}>{lan.NOTE_TITLE_LABEL}</Text>
       <TextInput
         style={[
           styles.input,
@@ -56,13 +62,13 @@ export default function NoteForm({
             borderColor: theme.border,
           },
         ]}
-        placeholder="Title"
+        placeholder={lan.NOTE_TITLE_PLACEHOLDER}
         value={title}
         onChangeText={setTitle}
         placeholderTextColor={theme.subtext}
       />
 
-      <Text style={[styles.label, { color: theme.subtext }]}>Content</Text>
+      <Text style={[styles.label, { color: theme.subtext }]}>{lan.NOTE_CONTENT_LABEL}</Text>
       <TextInput
         style={[
           styles.input,
@@ -73,7 +79,7 @@ export default function NoteForm({
             borderColor: theme.border,
           },
         ]}
-        placeholder="Write your note..."
+        placeholder={lan.NOTE_CONTENT_PLACEHOLDER}
         value={content}
         onChangeText={setContent}
         multiline
@@ -81,9 +87,32 @@ export default function NoteForm({
         placeholderTextColor={theme.subtext}
       />
 
+      <Text style={[styles.label, { color: theme.subtext }]}>{lan.NOTE_TAGS_LABEL}</Text>
+      <TextInput
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.surface,
+            color: theme.text,
+            borderColor: theme.border,
+          },
+        ]}
+        placeholder={lan.NOTE_TAGS_PLACEHOLDER}
+        value={tags.join(", ")}
+        onChangeText={(text) => {
+          const nextTags = text
+            .split(",")
+            .map((tag) => tag.trim().toLowerCase())
+            .filter(Boolean)
+            .slice(0, 10);
+          setTags([...new Set(nextTags)]);
+        }}
+        placeholderTextColor={theme.subtext}
+      />
+
       <View style={styles.sectionRow}>
         <Text style={[styles.label, { color: theme.subtext }]}>
-          Pin to top
+          {lan.NOTE_PIN_LABEL}
         </Text>
         <Switch
           value={pinned}
@@ -94,7 +123,7 @@ export default function NoteForm({
       </View>
 
       <Text style={[styles.label, { marginTop: 12, color: theme.subtext }]}>
-        Color
+        {lan.NOTE_COLOR_LABEL}
       </Text>
       <View style={styles.colorRow}>
         {COLORS.map((c) => (
@@ -113,7 +142,7 @@ export default function NoteForm({
       </View>
 
       <Text style={[styles.label, { marginTop: 12, color: theme.subtext }]}>
-        Reminder
+        {lan.NOTE_REMINDER_LABEL}
       </Text>
       <View style={styles.chipRow}>
         {REMIND_PRESETS.map((opt) => {
@@ -149,7 +178,7 @@ export default function NoteForm({
 
       {reminderAt && (
         <Text style={{ color: theme.subtext, marginTop: -4 }}>
-          Will remind on {reminderAt.toLocaleString()}
+          {lan.NOTE_REMINDER_PREVIEW(reminderAt.toLocaleString())}
         </Text>
       )}
 
@@ -165,7 +194,7 @@ export default function NoteForm({
           <ActivityIndicator color="#fff" />
         ) : (
           <Text style={styles.buttonText}>
-            {isEditing ? "Update note" : "Save note"}
+            {isEditing ? lan.NOTE_UPDATE_BUTTON : lan.NOTE_SAVE_BUTTON}
           </Text>
         )}
       </TouchableOpacity>

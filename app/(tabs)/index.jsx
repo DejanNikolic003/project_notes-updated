@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   SafeAreaView,
   Text,
@@ -10,26 +11,47 @@ import {
 } from "react-native";
 
 import { auth } from "../../database/config";
-import { deleteNote, subscribeToNotes, updateNote } from "../../database/notes";
+import { deleteNote, getAllNotes, updateNote } from "../../database/notes";
 import { useTheme } from "../../hooks/useTheme";
 import { scheduleRemindersForNotes } from "../../services/notificationService";
+import {
+  removeNote,
+  setNotes,
+  setNotesError,
+  setNotesLoading,
+} from "../../store/notesSlice";
 
 import Loader from "../../components/Loader";
 import NotesFilters from "../../components/NotesFilters";
 import NotesList from "../../components/NotesList";
 import NotesStats from "../../components/NotesStats";
+import { COLORS } from "../../constants/constants";
+import { useLanguage } from "../../hooks/useLanguage";
 
 export default function Home() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const { theme } = useTheme();
+  const lan = useLanguage();
+  const notes = useSelector((state) => state.notes.items);
+  const loading = useSelector((state) => state.notes.loading);
 
   const [currentUser, setCurrentUser] = useState(auth.currentUser);
-  const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [colorFilter, setColorFilter] = useState("all");
   const [sort, setSort] = useState("updated");
+
+  const loadAllNotes = async (userId) => {
+    dispatch(setNotesLoading(true));
+    try {
+      const allNotes = await getAllNotes(userId);
+      dispatch(setNotes(allNotes));
+    } catch (error) {
+      dispatch(setNotesError(error?.message || "Ucitavanje beleski nije uspelo."));
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -41,15 +63,8 @@ export default function Home() {
 
   useEffect(() => {
     if (!currentUser) return;
-
-    const unsubscribe = subscribeToNotes(currentUser.uid, (nextNotes) => {
-      setNotes(nextNotes);
-      setLoading(false);
-      setRefreshing(false);
-    });
-
-    return unsubscribe;
-  }, [currentUser]);
+    loadAllNotes(currentUser.uid);
+  }, [currentUser, dispatch]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -71,11 +86,17 @@ export default function Home() {
       );
     }
 
+    if (colorFilter !== "all") {
+      const selectedColor = COLORS.includes(colorFilter) ? colorFilter : COLORS[0];
+      pool = pool.filter((n) => (n.color || COLORS[0]) === selectedColor);
+    }
+
     if (term) {
       pool = pool.filter(
         (n) =>
           n.title.toLowerCase().includes(term) ||
-          n.content.toLowerCase().includes(term)
+          n.content.toLowerCase().includes(term) ||
+          n.tags?.some((tag) => tag.toLowerCase().includes(term))
       );
     }
 
@@ -88,7 +109,7 @@ export default function Home() {
         (a.updatedAt?.getTime?.() || 0)
       );
     });
-  }, [notes, search, filter, sort]);
+  }, [notes, search, filter, colorFilter, sort]);
 
   const listData = useMemo(() => {
     const pinned = filteredNotes.filter((n) => n.pinned);
@@ -98,22 +119,34 @@ export default function Home() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 400);
+    if (!currentUser) {
+      setRefreshing(false);
+      return;
+    }
+    loadAllNotes(currentUser.uid).finally(() => {
+      setRefreshing(false);
+    });
   };
 
   const handleDelete = async (note) => {
     try {
       await deleteNote(note.id);
+      dispatch(removeNote(note.id));
     } catch (e) {
       console.log(e);
+      dispatch(setNotesError(e?.message || "Brisanje beleske nije uspelo."));
     }
   };
 
   const handleTogglePin = async (note) => {
     try {
       await updateNote(note.id, { ...note, pinned: !note.pinned });
+      if (currentUser) {
+        loadAllNotes(currentUser.uid);
+      }
     } catch (e) {
       console.log(e);
+      dispatch(setNotesError(e?.message || "Azuriranje beleske nije uspelo."));
     }
   };
 
@@ -135,12 +168,11 @@ export default function Home() {
               fontWeight: "700",
             }}
           >
-            Hey, {currentUser.email}
+            {lan.HOME_GREETING(currentUser.email)}
           </Text>
         )}
 
         <NotesStats
-          theme={theme}
           total={notes.length}
           pinned={notes.filter((n) => n.pinned).length}
         />
@@ -158,7 +190,7 @@ export default function Home() {
           }}
         >
           <TextInput
-            placeholder="Search notes"
+            placeholder={lan.HOME_SEARCH_PLACEHOLDER}
             value={search}
             onChangeText={setSearch}
             style={{ flex: 1, height: 44, color: theme.text }}
@@ -167,15 +199,15 @@ export default function Home() {
         </View>
 
         <NotesFilters
-          theme={theme}
           filter={filter}
           setFilter={setFilter}
+          colorFilter={colorFilter}
+          setColorFilter={setColorFilter}
           sort={sort}
           setSort={setSort}
         />
 
         <NotesList
-          theme={theme}
           data={listData}
           refreshing={refreshing}
           onRefresh={onRefresh}
@@ -199,7 +231,7 @@ export default function Home() {
           }}
         >
           <Text style={{ color: "#fff", fontWeight: "800" }}>
-            + New note
+            {lan.HOME_NEW_NOTE_BUTTON}
           </Text>
         </TouchableOpacity>
       </View>

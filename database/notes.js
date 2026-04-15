@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   getDoc,
   onSnapshot,
   orderBy,
@@ -12,8 +13,10 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./config";
+import { normalizeTags } from "../utils/utils";
 
 const notesCollection = collection(db, "notes");
+
 
 const noteFromDoc = (docSnap) => {
   const data = docSnap.data() || {};
@@ -23,6 +26,7 @@ const noteFromDoc = (docSnap) => {
     content: data.content || "",
     color: data.color || "#4F46E5",
     pinned: Boolean(data.pinned),
+    tags: normalizeTags(data.tags),
     reminderAt: data.reminderAt?.toDate?.() || null,
     userId: data.userId,
     createdAt: data.createdAt?.toDate?.() || null,
@@ -44,24 +48,38 @@ export const subscribeToNotes = (userId, onChange) => {
   });
 };
 
-export const createNote = (userId, { title, content, color, pinned, reminderAt }) =>
+export const getAllNotes = async (userId) => {
+  const notesQuery = query(
+    notesCollection,
+    where("userId", "==", userId),
+    orderBy("pinned", "desc"),
+    orderBy("updatedAt", "desc")
+  );
+
+  const snapshot = await getDocs(notesQuery);
+  return snapshot.docs.map(noteFromDoc);
+};
+
+export const createNote = (userId, { title, content, color, pinned, tags, reminderAt }) =>
   addDoc(notesCollection, {
     title,
     content,
     color,
     pinned: Boolean(pinned),
+    tags: normalizeTags(tags),
     reminderAt: reminderAt || null,
     userId,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 
-export const updateNote = (noteId, { title, content, color, pinned, reminderAt }) =>
+export const updateNote = (noteId, { title, content, color, pinned, tags, reminderAt }) =>
   updateDoc(doc(notesCollection, noteId), {
     title,
     content,
     color,
     pinned: Boolean(pinned),
+    tags: normalizeTags(tags),
     reminderAt: reminderAt || null,
     updatedAt: serverTimestamp(),
   });

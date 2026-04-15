@@ -7,11 +7,11 @@ import {
     View,
 } from "react-native";
 
+import { useLanguage } from "../../hooks/useLanguage";
+import { useTheme } from "../../hooks/useTheme";
 import { styles } from "../../styles/LoginForm";
 
 export default function LoginForm({
-  theme,
-
   email,
   setEmail,
 
@@ -27,6 +27,9 @@ export default function LoginForm({
   onSubmit,
   onRegister,
 }) {
+  const { theme } = useTheme();
+  const lan = useLanguage();
+
   return (
     <ScrollView
       contentContainerStyle={[
@@ -35,14 +38,14 @@ export default function LoginForm({
       ]}
     >
       <Text style={[styles.header, { color: theme.text }]}>
-        Welcome back
+        {lan.LOGIN_TITLE}
       </Text>
       <Text style={[styles.subheader, { color: theme.subtext }]}>
-        Sign in to continue
+        {lan.LOGIN_SUBTITLE}
       </Text>
 
       <Text style={[styles.label, { color: theme.subtext }]}>
-        Email
+        {lan.EMAIL}
       </Text>
       <View
         style={[
@@ -61,7 +64,7 @@ export default function LoginForm({
         />
         <TextInput
           style={[styles.input, { color: theme.text }]}
-          placeholder="Email"
+          placeholder={lan.LOGIN_EMAIL_PLACEHOLDER}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -71,7 +74,7 @@ export default function LoginForm({
       </View>
 
       <Text style={[styles.label, { color: theme.subtext }]}>
-        Password
+        {lan.PASSWORD}
       </Text>
       <View
         style={[
@@ -90,7 +93,7 @@ export default function LoginForm({
         />
         <TextInput
           style={[styles.input, { color: theme.text, flex: 1 }]}
-          placeholder="Password"
+          placeholder={lan.LOGIN_PASSWORD_PLACEHOLDER}
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
@@ -125,7 +128,7 @@ export default function LoginForm({
           )}
         </View>
         <Text style={{ color: theme.text, fontWeight: "600" }}>
-          Remember me
+          {lan.LOGIN_REMEMBER_ME}
         </Text>
       </TouchableOpacity>
 
@@ -134,7 +137,7 @@ export default function LoginForm({
         style={[styles.button, { backgroundColor: theme.primary }]}
         activeOpacity={0.9}
       >
-        <Text style={styles.buttonText}>Log In</Text>
+        <Text style={styles.buttonText}>{lan.LOGIN_SUBMIT}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={onRegister}>
@@ -146,7 +149,7 @@ export default function LoginForm({
             textAlign: "center",
           }}
         >
-          You don't have an account? Register here.
+          {lan.LOGIN_TO_REGISTER}
         </Text>
       </TouchableOpacity>
     </ScrollView>

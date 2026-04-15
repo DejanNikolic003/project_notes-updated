@@ -7,11 +7,11 @@ import {
     View,
 } from "react-native";
 
+import { useLanguage } from "../../hooks/useLanguage";
+import { useTheme } from "../../hooks/useTheme";
 import { styles } from "../../styles/RegisterForm";
 
 export default function RegisterForm({
-  theme,
-
   email,
   setEmail,
 
@@ -24,6 +24,9 @@ export default function RegisterForm({
   onSubmit,
   onLogin,
 }) {
+  const { theme } = useTheme();
+  const lan = useLanguage();
+
   return (
     <ScrollView
       contentContainerStyle={[
@@ -32,14 +35,14 @@ export default function RegisterForm({
       ]}
     >
       <Text style={[styles.header, { color: theme.text }]}>
-        Create account
+        {lan.REGISTER_TITLE}
       </Text>
       <Text style={[styles.subheader, { color: theme.subtext }]}>
-        Sign up to start writing
+        {lan.REGISTER_SUBTITLE}
       </Text>
 
       <Text style={[styles.label, { color: theme.subtext }]}>
-        Email
+        {lan.EMAIL}
       </Text>
       <View
         style={[
@@ -58,7 +61,7 @@ export default function RegisterForm({
         />
         <TextInput
           style={[styles.input, { color: theme.text }]}
-          placeholder="Email"
+          placeholder={lan.REGISTER_EMAIL_PLACEHOLDER}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -68,7 +71,7 @@ export default function RegisterForm({
       </View>
 
       <Text style={[styles.label, { color: theme.subtext }]}>
-        Password
+        {lan.PASSWORD}
       </Text>
       <View
         style={[
@@ -87,7 +90,7 @@ export default function RegisterForm({
         />
         <TextInput
           style={[styles.input, { color: theme.text, flex: 1 }]}
-          placeholder="Password"
+          placeholder={lan.REGISTER_PASSWORD_PLACEHOLDER}
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
@@ -108,7 +111,7 @@ export default function RegisterForm({
         style={[styles.button, { backgroundColor: theme.primary }]}
         activeOpacity={0.9}
       >
-        <Text style={styles.buttonText}>Register</Text>
+        <Text style={styles.buttonText}>{lan.REGISTER_SUBMIT}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={onLogin}>
@@ -120,7 +123,7 @@ export default function RegisterForm({
             textAlign: "center",
           }}
         >
-          If you have an account? Login here.
+          {lan.REGISTER_TO_LOGIN}
         </Text>
       </TouchableOpacity>
     </ScrollView>

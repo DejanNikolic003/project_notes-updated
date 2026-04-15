@@ -4,14 +4,16 @@ import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import RegisterForm from "../components/forms/RegisterForm";
 import { auth } from "../database/config";
-import { useTheme } from "../hooks/useTheme";
+import { useLanguage } from "../hooks/useLanguage";
+import { getRegisterErrorMessage } from "../utils/utils";
+import { EMAIL_REGEX } from "../constants/constants";
 
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
-  const { theme } = useTheme();
+  const lan = useLanguage();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -23,17 +25,33 @@ export default function Register() {
   }, [router]);
 
   const handleRegister = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail || !password.trim()) {
+      Alert.alert(lan.REGISTER_MISSING_INFO_TITLE, lan.REGISTER_MISSING_INFO_MESSAGE);
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      Alert.alert(lan.REGISTER_INVALID_EMAIL_TITLE, lan.REGISTER_INVALID_EMAIL_MESSAGE);
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert(lan.REGISTER_INVALID_PASSWORD_TITLE, lan.REGISTER_INVALID_PASSWORD_MESSAGE);
+      return;
+    }
+
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      Alert.alert("Success", "User registered successfully!");
+      await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+      Alert.alert(lan.REGISTER_SUCCESS_TITLE, lan.REGISTER_SUCCESS_MESSAGE);
       router.replace("/login");
     } catch (error) {
-      Alert.alert("Error", error.message);
+      Alert.alert(lan.REGISTER_FAILED_TITLE, getRegisterErrorMessage(error, lan));
     }
   };
   
   return (<RegisterForm
-  theme={theme}
   email={email}
   setEmail={setEmail}
   password={password}

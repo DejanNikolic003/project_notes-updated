@@ -1,9 +1,10 @@
 import { FlatList, RefreshControl, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../hooks/useTheme";
+import { useLanguage } from "../hooks/useLanguage";
 import Note from "./Note";
 
 export default function NotesList({
   data,
-  theme,
   refreshing,
   onRefresh,
   onDelete,
@@ -11,6 +12,9 @@ export default function NotesList({
   onEdit,
   onCreate,
 }) {
+  const { theme } = useTheme();
+  const lan = useLanguage();
+
   return (
     <FlatList
       data={data}
@@ -30,7 +34,7 @@ export default function NotesList({
       ListEmptyComponent={
         <View style={{ alignItems: "center", marginTop: 40 }}>
           <Text style={{ color: theme.subtext, marginBottom: 10 }}>
-            No notes yet. Start by creating one!
+            {lan.HOME_LIST_EMPTY}
           </Text>
           <TouchableOpacity
             onPress={onCreate}
@@ -42,7 +46,7 @@ export default function NotesList({
             }}
           >
             <Text style={{ color: "#fff", fontWeight: "600" }}>
-              Create note
+              {lan.HOME_LIST_CREATE_BUTTON}
             </Text>
           </TouchableOpacity>
         </View>

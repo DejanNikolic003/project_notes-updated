@@ -29,3 +29,53 @@ export const computeReminderDate = (key) => {
       return null;
   }
 };
+
+export const formatDate = (date) => {
+  if (!date) return "";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};
+
+export const getLoginErrorMessage = (error, strings) => {
+  switch (error?.code) {
+    case "auth/invalid-email":
+      return strings.AUTH_INVALID_EMAIL;
+    case "auth/invalid-credential":
+    case "auth/user-not-found":
+    case "auth/wrong-password":
+      return strings.AUTH_INVALID_CREDENTIALS;
+    case "auth/too-many-requests":
+      return strings.AUTH_TOO_MANY_REQUESTS;
+    case "auth/network-request-failed":
+      return strings.AUTH_NETWORK_FAILED;
+    default:
+      return strings.AUTH_LOGIN_DEFAULT;
+  }
+};
+
+export const getRegisterErrorMessage = (error, strings) => {
+  switch (error?.code) {
+    case "auth/invalid-email":
+      return strings.AUTH_INVALID_EMAIL;
+    case "auth/email-already-in-use":
+      return strings.AUTH_EMAIL_IN_USE;
+    case "auth/weak-password":
+      return strings.AUTH_WEAK_PASSWORD;
+    case "auth/network-request-failed":
+      return strings.AUTH_NETWORK_FAILED;
+    default:
+      return strings.AUTH_REGISTER_DEFAULT;
+  }
+};
+
+export const normalizeTags = (tags) => {
+  if (!Array.isArray(tags)) return [];
+  const clean = tags
+      .map((tag) => String(tag || "").trim().toLowerCase())
+      .filter(Boolean);
+  return [...new Set(clean)].slice(0, 10);
+};

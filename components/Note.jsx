@@ -1,20 +1,14 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../hooks/useTheme";
-
-const formatDate = (date) => {
-  if (!date) return "";
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-};
+import { useLanguage } from "../hooks/useLanguage";
+import { formatDate } from "../utils/utils";
+import { STYLES } from "../styles/Note";
 
 const Note = ({ note, onEdit, onDelete, onTogglePin }) => {
   const { theme } = useTheme();
+  const lan = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -34,7 +28,7 @@ const Note = ({ note, onEdit, onDelete, onTogglePin }) => {
   return (
     <View
       style={[
-        styles.card,
+        STYLES.card,
         {
           borderLeftColor: note.color || theme.primary,
           backgroundColor: theme.surface,
@@ -42,13 +36,15 @@ const Note = ({ note, onEdit, onDelete, onTogglePin }) => {
         },
       ]}
     >
-      <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)} style={styles.header}>
+      <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)} style={STYLES.header}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: theme.text }]}>{note.title}</Text>
-          <Text style={[styles.meta, { color: theme.subtext }]}>{formatDate(note.updatedAt) || "Draft"}</Text>
+          <Text style={[STYLES.title, { color: theme.text }]}>{note.title}</Text>
+          <Text style={[STYLES.meta, { color: theme.subtext }]}>
+            {formatDate(note.updatedAt) || lan.HOME_NOTE_DRAFT}
+          </Text>
         </View>
 
-        <View style={styles.headerIcons}>
+        <View style={STYLES.headerIcons}>
           {note.pinned && <Ionicons name="star" size={16} color="#F59E0B" style={{ marginRight: 8 }} />}
           <Animated.View style={{ transform: [{ rotate: rotation }] }}>
             <Ionicons name="chevron-forward-outline" size={20} color={theme.text} />
@@ -57,23 +53,36 @@ const Note = ({ note, onEdit, onDelete, onTogglePin }) => {
       </TouchableOpacity>
 
       {isExpanded && (
-        <View style={styles.body}>
-          <Text style={[styles.content, { color: theme.text }]}>{note.content}</Text>
+        <View style={STYLES.body}>
+          <Text style={[STYLES.content, { color: theme.text }]}>{note.content}</Text>
+          {!!note.tags?.length && (
+            <View style={STYLES.tagsRow}>
+              {note.tags.map((tag) => (
+                <View key={tag} style={[STYLES.tagChip, { backgroundColor: theme.muted }]}>
+                  <Text style={[STYLES.tagText, { color: theme.subtext }]}>#{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.action} onPress={() => onTogglePin?.(note)}>
+          <View style={STYLES.actions}>
+            <TouchableOpacity style={STYLES.action} onPress={() => onTogglePin?.(note)}>
               <Ionicons name={note.pinned ? "star" : "star-outline"} size={18} color="#F59E0B" />
-              <Text style={styles.actionText}>{note.pinned ? "Unpin" : "Pin"}</Text>
+              <Text style={STYLES.actionText}>
+                {note.pinned ? lan.HOME_NOTE_UNPIN : lan.HOME_NOTE_PIN}
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.action} onPress={() => onEdit?.(note)}>
+            <TouchableOpacity style={STYLES.action} onPress={() => onEdit?.(note)}>
               <Ionicons name="pencil" size={18} color={theme.primary} />
-              <Text style={styles.actionText}>Edit</Text>
+              <Text style={STYLES.actionText}>{lan.HOME_NOTE_EDIT}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.action} onPress={() => onDelete?.(note)}>
+            <TouchableOpacity style={STYLES.action} onPress={() => onDelete?.(note)}>
               <Ionicons name="trash" size={18} color={theme.danger} />
-              <Text style={[styles.actionText, { color: theme.danger }]}>Delete</Text>
+              <Text style={[STYLES.actionText, { color: theme.danger }]}>
+                {lan.HOME_NOTE_DELETE}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -81,61 +90,5 @@ const Note = ({ note, onEdit, onDelete, onTogglePin }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    padding: 14,
-    marginVertical: 6,
-    borderRadius: 14,
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-    borderLeftWidth: 4,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerIcons: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginLeft: 12,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  meta: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 2,
-  },
-  body: {
-    marginTop: 10,
-  },
-  content: {
-    fontSize: 14,
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-  },
-  action: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 18,
-  },
-  actionText: {
-    fontSize: 14,
-    color: "#1F2937",
-    marginLeft: 6,
-  },
-});
 
 export default Note;

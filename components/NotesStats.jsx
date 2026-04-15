@@ -1,6 +1,11 @@
 import { Text, View } from "react-native";
+import { useTheme } from "../hooks/useTheme";
+import { useLanguage } from "../hooks/useLanguage";
 
-export default function NotesStats({ theme, total, pinned }) {
+export default function NotesStats({ total, pinned }) {
+  const { theme } = useTheme();
+  const lan = useLanguage();
+
   return (
     <View
       style={{
@@ -19,14 +24,14 @@ export default function NotesStats({ theme, total, pinned }) {
       }}
     >
       <View>
-        <Text style={{ color: theme.subtext, fontSize: 12 }}>Your notes</Text>
+        <Text style={{ color: theme.subtext, fontSize: 12 }}>{lan.HOME_STATS_TOTAL}</Text>
         <Text style={{ color: theme.text, fontSize: 26, fontWeight: "800" }}>
           {total}
         </Text>
       </View>
 
       <View style={{ alignItems: "flex-end" }}>
-        <Text style={{ color: theme.subtext, fontSize: 12 }}>Pinned</Text>
+        <Text style={{ color: theme.subtext, fontSize: 12 }}>{lan.HOME_STATS_PINNED}</Text>
         <Text style={{ color: theme.text, fontSize: 18, fontWeight: "700" }}>
           {pinned}
         </Text>

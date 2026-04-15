@@ -8,6 +8,7 @@ export const REMIND_PRESETS = [
   { key: "tomorrow", label: "Tomorrow 9 AM" },
   { key: "week", label: "Next week" },
 ];
+
 export const PALETTES = {
   light: {
     mode: "light",
@@ -40,3 +41,5 @@ export const PALETTES = {
     shadow: "rgba(0, 0, 0, 0.4)",
   },
 };
+
+export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

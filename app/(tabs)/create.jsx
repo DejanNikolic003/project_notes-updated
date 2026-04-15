@@ -1,25 +1,29 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo } from "react";
+import { useDispatch } from "react-redux";
 import { Alert } from "react-native";
 import NoteForm from "../../components/forms/NoteForm";
 import Loader from "../../components/Loader";
 import { auth } from "../../database/config";
+import { useLanguage } from "../../hooks/useLanguage";
+import { createNote, getAllNotes } from "../../database/notes";
 import { useNoteForm } from "../../hooks/useNoteForm";
-import { useTheme } from "../../hooks/useTheme";
 import { loadNote, saveNote } from "../../services/noteService";
+import { addNote, setNotes, setNotesError } from "../../store/notesSlice";
 
 export default function Create() {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const lan = useLanguage();
   const user = auth.currentUser;
   const params = useLocalSearchParams();
-
-  const { theme } = useTheme();
   const noteId = Array.isArray(params.noteId) ? params.noteId[0] : params.noteId;
   const isEditing = useMemo(() => Boolean(noteId), [noteId]);
 
   const {
     title, setTitle,
     content, setContent,
+    tags, setTags,
     color, setColor,
     pinned, setPinned,
     reminderKey, setReminderKey,
@@ -43,13 +47,14 @@ export default function Create() {
         const note = await loadNote(noteId);
         
         if (!note) {
-          Alert.alert("Not found", "Could not load this note.");
+          Alert.alert(lan.NOTE_NOT_FOUND_TITLE, lan.NOTE_NOT_FOUND_MESSAGE);
           router.back();
           return;
         }
 
         setTitle(note.title);
         setContent(note.content);
+        setTags(note.tags || []);
         setColor(note.color);
         setPinned(Boolean(note.pinned));
         if (note.reminderAt) {
@@ -57,7 +62,7 @@ export default function Create() {
           setReminderKey("custom");
         }
       } catch (error) {
-        Alert.alert("Error", "Failed to load note. Try again.");
+        Alert.alert(lan.NOTE_LOAD_FAILED_TITLE, lan.NOTE_LOAD_FAILED_MESSAGE);
       } finally {
         setLoading(false);
       }
@@ -67,13 +72,36 @@ export default function Create() {
   }, [noteId, router]);
 
   const handleSubmit = async () => {
-    if (!title.trim() || !content.trim()) {
-      Alert.alert("Missing info", "Please add both a title and content.");
+    const cleanTitle = title.trim();
+    const cleanContent = content.trim();
+
+    if (!cleanTitle || !cleanContent) {
+      Alert.alert(lan.NOTE_MISSING_INFO_TITLE, lan.NOTE_MISSING_INFO_MESSAGE);
+      return;
+    }
+
+    if (cleanTitle.length < 3) {
+      Alert.alert(lan.NOTE_INVALID_TITLE_TITLE, lan.NOTE_INVALID_TITLE_SHORT);
+      return;
+    }
+
+    if (cleanContent.length < 5) {
+      Alert.alert(lan.NOTE_INVALID_CONTENT_TITLE, lan.NOTE_INVALID_CONTENT_SHORT);
+      return;
+    }
+
+    if (cleanTitle.length > 120) {
+      Alert.alert(lan.NOTE_INVALID_TITLE_TITLE, lan.NOTE_INVALID_TITLE_LONG);
+      return;
+    }
+
+    if (cleanContent.length > 5000) {
+      Alert.alert(lan.NOTE_INVALID_CONTENT_TITLE, lan.NOTE_INVALID_CONTENT_LONG);
       return;
     }
 
     if (!user) {
-      Alert.alert("Not signed in", "Please log in to save notes.");
+      Alert.alert(lan.NOTE_NOT_SIGNED_IN_TITLE, lan.NOTE_NOT_SIGNED_IN_MESSAGE);
       router.replace("/login");
       return;
     }
@@ -82,20 +110,37 @@ export default function Create() {
 
     try {
       const payload = {
-        title: title.trim(),
-        content: content.trim(),
+        title: cleanTitle,
+        content: cleanContent,
+        tags,
         color,
         pinned,
         reminderAt,
       };
 
-      await saveNote({ isEditing, noteId, userId: user.uid, payload })
+      if (isEditing) {
+        await saveNote({ isEditing, noteId, userId: user.uid, payload });
+      } else {
+        const docRef = await createNote(user.uid, payload);
+        dispatch(
+          addNote({
+            id: docRef.id,
+            ...payload,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+        );
+      }
+
+      const allNotes = await getAllNotes(user.uid);
+      dispatch(setNotes(allNotes));
 
       resetFields();
       router.replace("/(tabs)/");
     } catch (error) {
       console.log("Save note error", error);
-      Alert.alert("Error", "Could not save note. Please try again.");
+      dispatch(setNotesError(error?.message || "Cuvanje beleske nije uspelo."));
+      Alert.alert(lan.NOTE_SAVE_FAILED_TITLE, lan.NOTE_SAVE_FAILED_MESSAGE);
     } finally {
       setSaving(false);
       setLoading(false);
@@ -107,12 +152,13 @@ export default function Create() {
   }
 
   return (<NoteForm 
-      theme={theme}
       isEditing={isEditing}
       title={title}
       setTitle={setTitle}
       content={content}
       setContent={setContent}
+      tags={tags}
+      setTags={setTags}
       color={color}
       setColor={setColor}
       pinned={pinned}
