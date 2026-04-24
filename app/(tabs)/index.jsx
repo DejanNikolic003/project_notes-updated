@@ -11,14 +11,13 @@ import {
 } from "react-native";
 
 import { auth } from "../../database/config";
-import { deleteNote, getAllNotes, updateNote } from "../../database/notes";
 import { useTheme } from "../../hooks/useTheme";
 import { scheduleRemindersForNotes } from "../../services/notificationService";
 import {
-  removeNote,
-  setNotes,
+  deleteNoteAsync,
   setNotesError,
-  setNotesLoading,
+  startNotesListener,
+  updateNoteAsync,
 } from "../../store/notesSlice";
 
 import Loader from "../../components/Loader";
@@ -43,16 +42,6 @@ export default function Home() {
   const [colorFilter, setColorFilter] = useState("all");
   const [sort, setSort] = useState("updated");
 
-  const loadAllNotes = async (userId) => {
-    dispatch(setNotesLoading(true));
-    try {
-      const allNotes = await getAllNotes(userId);
-      dispatch(setNotes(allNotes));
-    } catch (error) {
-      dispatch(setNotesError(error?.message || "Ucitavanje beleski nije uspelo."));
-    }
-  };
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -63,7 +52,8 @@ export default function Home() {
 
   useEffect(() => {
     if (!currentUser) return;
-    loadAllNotes(currentUser.uid);
+    const unsubscribe = dispatch(startNotesListener(currentUser.uid));
+    return unsubscribe;
   }, [currentUser, dispatch]);
 
   useEffect(() => {
@@ -119,19 +109,12 @@ export default function Home() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    if (!currentUser) {
-      setRefreshing(false);
-      return;
-    }
-    loadAllNotes(currentUser.uid).finally(() => {
-      setRefreshing(false);
-    });
+    setRefreshing(false);
   };
 
   const handleDelete = async (note) => {
     try {
-      await deleteNote(note.id);
-      dispatch(removeNote(note.id));
+      await dispatch(deleteNoteAsync(note.id)).unwrap();
     } catch (e) {
       console.log(e);
       dispatch(setNotesError(e?.message || "Brisanje beleske nije uspelo."));
@@ -140,10 +123,7 @@ export default function Home() {
 
   const handleTogglePin = async (note) => {
     try {
-      await updateNote(note.id, { ...note, pinned: !note.pinned });
-      if (currentUser) {
-        loadAllNotes(currentUser.uid);
-      }
+      await dispatch(updateNoteAsync({ noteId: note.id, noteData: { ...note, pinned: !note.pinned } })).unwrap();
     } catch (e) {
       console.log(e);
       dispatch(setNotesError(e?.message || "Azuriranje beleske nije uspelo."));

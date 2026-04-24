@@ -4,10 +4,10 @@ import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import LoginForm from "../components/forms/LoginForm";
+import { EMAIL_REGEX } from "../constants/constants";
 import { auth } from "../database/config";
 import { useLanguage } from "../hooks/useLanguage";
 import { getLoginErrorMessage } from "../utils/utils";
-import { EMAIL_REGEX } from "../constants/constants";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -25,8 +25,7 @@ export default function Login() {
           setEmail(saved);
           setRemember(true);
         }
-      } catch (e) {
-      }
+      } catch (e) {}
     };
     loadRemembered();
 
@@ -47,12 +46,10 @@ export default function Login() {
     }
 
     if (!EMAIL_REGEX.test(normalizedEmail)) {
-      Alert.alert(lan.LOGIN_INVALID_EMAIL_TITLE, lan.LOGIN_INVALID_EMAIL_MESSAGE);
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert(lan.LOGIN_INVALID_PASSWORD_TITLE, lan.LOGIN_INVALID_PASSWORD_MESSAGE);
+      Alert.alert(
+        lan.LOGIN_INVALID_EMAIL_TITLE,
+        lan.LOGIN_INVALID_EMAIL_MESSAGE,
+      );
       return;
     }
 
@@ -69,7 +66,8 @@ export default function Login() {
     }
   };
 
-  return (<LoginForm
+  return (
+    <LoginForm
       email={email}
       setEmail={setEmail}
       password={password}
@@ -80,5 +78,6 @@ export default function Login() {
       onToggleRemember={setRemember}
       onSubmit={handleLogin}
       onRegister={() => router.push("/register")}
-    />);
+    />
+  );
 }

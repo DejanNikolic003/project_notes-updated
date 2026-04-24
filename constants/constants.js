@@ -43,3 +43,9 @@ export const PALETTES = {
 };
 
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export const FILTERS = [
+  { key: "all", label: "All" },
+  { key: "pinned", label: "Pinned" },
+  { key: "recent", label: "Recent" },
+];

@@ -6,10 +6,13 @@ import NoteForm from "../../components/forms/NoteForm";
 import Loader from "../../components/Loader";
 import { auth } from "../../database/config";
 import { useLanguage } from "../../hooks/useLanguage";
-import { createNote, getAllNotes } from "../../database/notes";
 import { useNoteForm } from "../../hooks/useNoteForm";
-import { loadNote, saveNote } from "../../services/noteService";
-import { addNote, setNotes, setNotesError } from "../../store/notesSlice";
+import {
+  createNoteAsync,
+  getNoteByIdAsync,
+  setNotesError,
+  updateNoteAsync,
+} from "../../store/notesSlice";
 
 export default function Create() {
   const router = useRouter();
@@ -44,13 +47,7 @@ export default function Create() {
 
     const fetchNote = async () => {
       try {
-        const note = await loadNote(noteId);
-        
-        if (!note) {
-          Alert.alert(lan.NOTE_NOT_FOUND_TITLE, lan.NOTE_NOT_FOUND_MESSAGE);
-          router.back();
-          return;
-        }
+        const note = await dispatch(getNoteByIdAsync(noteId)).unwrap();
 
         setTitle(note.title);
         setContent(note.content);
@@ -62,6 +59,11 @@ export default function Create() {
           setReminderKey("custom");
         }
       } catch (error) {
+        if (error === "NOTE_NOT_FOUND") {
+          Alert.alert(lan.NOTE_NOT_FOUND_TITLE, lan.NOTE_NOT_FOUND_MESSAGE);
+          router.back();
+          return;
+        }
         Alert.alert(lan.NOTE_LOAD_FAILED_TITLE, lan.NOTE_LOAD_FAILED_MESSAGE);
       } finally {
         setLoading(false);
@@ -119,21 +121,10 @@ export default function Create() {
       };
 
       if (isEditing) {
-        await saveNote({ isEditing, noteId, userId: user.uid, payload });
+        await dispatch(updateNoteAsync({ noteId, noteData: payload })).unwrap();
       } else {
-        const docRef = await createNote(user.uid, payload);
-        dispatch(
-          addNote({
-            id: docRef.id,
-            ...payload,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          })
-        );
+        await dispatch(createNoteAsync({ userId: user.uid, noteData: payload })).unwrap();
       }
-
-      const allNotes = await getAllNotes(user.uid);
-      dispatch(setNotes(allNotes));
 
       resetFields();
       router.replace("/(tabs)/");
